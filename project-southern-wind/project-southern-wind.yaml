@@ -1,6 +1,6 @@
 schemaVersion: 1
 meta:
-  sourceVersionId: 126db175-2ea5-42cf-bd72-b7389cb9e6ae # DO NOT CHANGE - Hex uses this to match up project versions when reimporting the file
+  sourceVersionId: 4eadd06c-6965-4d50-80e1-cc7264e38fef # DO NOT CHANGE - Hex uses this to match up project versions when reimporting the file
   description: null
   projectId: 7a93cbff-2f16-45fe-9557-554644118ffe # DO NOT CHANGE - Unique ID of the project from which this file was generated
   title: Project Southern Wind
@@ -246,4 +246,24 @@ appLayout:
     - CATEGORIES
     - STATUS
     - TABLE_OF_CONTENTS
-  rows: []
+  rows:
+    - columns:
+        - start: 0
+          end: 120
+          elements:
+            - showSource: false
+              hideOutput: false
+              type: CELL
+              cellId: 350a5281-9713-410d-b001-15100771ea65
+              height: null
+              showLabel: true
+    - columns:
+        - start: 0
+          end: 120
+          elements:
+            - showSource: false
+              hideOutput: false
+              type: CELL
+              cellId: 8963c104-2463-4877-9406-9a55af57393f
+              height: null
+              showLabel: true
