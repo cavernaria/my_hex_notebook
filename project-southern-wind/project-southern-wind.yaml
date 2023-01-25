@@ -1,0 +1,249 @@
+schemaVersion: 1
+meta:
+  sourceVersionId: 126db175-2ea5-42cf-bd72-b7389cb9e6ae # DO NOT CHANGE - Hex uses this to match up project versions when reimporting the file
+  description: null
+  projectId: 7a93cbff-2f16-45fe-9557-554644118ffe # DO NOT CHANGE - Unique ID of the project from which this file was generated
+  title: Project Southern Wind
+  timezone: null
+  appTheme: SYS_PREF
+  codeLanguage: PYTHON
+  status:
+    name: In Progress
+  categories:
+    - name: Internal
+  castDecimalsDefault: true
+  logicQueryCacheTimeout:
+    type: fixed
+    unit: minutes
+    duration: 60
+  publishedQueryCacheTimeout:
+    type: fixed
+    unit: minutes
+    duration: 60
+projectAssets:
+  dataConnections: []
+  envVars: []
+  secrets:
+    - secretName: account_name
+    - secretName: password
+    - secretName: sp_client_id
+    - secretName: sp_client_secret
+    - secretName: username
+sharedAssets:
+  secrets: []
+  vcsPackages: []
+  dataConnections:
+    - dataConnectionId: a6b774ac-b90c-4316-9baf-57286f62cf15 # tamai's Snowflake (snowflake)
+cells:
+  - cellType: CODE
+    cellId: 9ca7c564-c2ca-40d6-b632-db8f2b63b9a7 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: "!pip install spotipy --upgrade"
+  - cellType: CODE
+    cellId: 377d5b42-037c-4506-a320-996293557570 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        import json
+        import spotipy
+        import snowflake.connector as sc
+        from spotipy.oauth2 import SpotifyClientCredentials
+  - cellType: CODE
+    cellId: 6e42439a-53cc-4c21-8381-af75e0bdec34 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        client_credentials_manager = spotipy.oauth2.SpotifyClientCredentials(sp_client_id, sp_client_secret)
+        spotify = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+        track_id = 'https://open.spotify.com/track/2dZHD66ameYxyZkJtR6bYG?si=8629cbd4675e417f'
+
+        audio_analysis = spotify.audio_analysis(track_id)
+  - cellType: CODE
+    cellId: d6c23019-f52f-4940-a8ed-791663b729a0 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        path = './southern_wind_analysis.json'
+        audio_file = open(path, mode="w")
+
+        json.dump(audio_analysis, audio_file)
+  - cellType: SQL
+    cellId: 00055a16-0eb7-4977-8fd2-2e57debdfe71 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        CREATE TABLE "TAMAI_TEST_DB"."SPOTIFY"."SOUTHERN_WIND"(
+            "RAW_STATUS" VARIANT
+        )
+      dataFrameCell: false
+      dataConnectionId: a6b774ac-b90c-4316-9baf-57286f62cf15
+      resultVariableName: dataframe_2
+      enableCache: false
+      runOnLoad: false
+      runOnSchedule: false
+      useRichDisplay: false
+      sqlCellOutputType: PANDAS
+      useQueryMode: false
+      castDecimals: true
+      useNativeDates: true
+      allowDuplicateColumns: false
+      tableDisplayConfig: null
+  - cellType: CODE
+    cellId: 350a5281-9713-410d-b001-15100771ea65 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        conn = sc.connect(
+            user=username,
+            password=password,
+            account=account_name,
+            role='SYSADMIN',
+            warehouse='X_SMALL_WH',
+            database='TAMAI_TEST_DB',
+            schema ='SPOTIFY'
+        )
+
+        conn.cursor().execute("PUT file:///hex/southern_wind_analysis.json @%SOUTHERN_WIND")
+  - cellType: SQL
+    cellId: b74ff14b-3738-48f0-b299-cf978a6d4bb4 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        COPY INTO "TAMAI_TEST_DB"."SPOTIFY"."SOUTHERN_WIND"
+        FILE_FORMAT = (type = json);
+      dataFrameCell: false
+      dataConnectionId: a6b774ac-b90c-4316-9baf-57286f62cf15
+      resultVariableName: dataframe_4
+      enableCache: false
+      runOnLoad: false
+      runOnSchedule: false
+      useRichDisplay: false
+      sqlCellOutputType: PANDAS
+      useQueryMode: false
+      castDecimals: true
+      useNativeDates: true
+      allowDuplicateColumns: false
+      tableDisplayConfig: null
+  - cellType: SQL
+    cellId: 0866905c-6e87-4620-950b-56402915442c # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        WITH tmp_wind AS(
+            SELECT
+                VALUE AS raw_status
+            FROM
+                 "TAMAI_TEST_DB"."SPOTIFY"."SOUTHERN_WIND"
+                ,LATERAL FLATTEN(
+                    input => RAW_STATUS:sections
+                )
+        )
+        SELECT
+             raw_status:start::float AS "start"
+            ,raw_status:duration::float AS "duration"
+            ,raw_status:confidence::float AS "confidence"
+            ,raw_status:loudness::float AS "loudness"
+            ,raw_status:tempo::float AS "tempo"
+            ,raw_status:tempo_confidence::float AS "tempo_confidence"
+            ,raw_status:key::integer::float AS "key"
+            ,raw_status:key_confidence::float AS "key_confidence"
+            ,raw_status:mode::integer AS "mode"
+            ,raw_status:mode_confidence::float AS "mode_confidence"
+            ,raw_status:time_signature::integer AS "time_signature"
+            ,raw_status:time_signature_confidence::float AS "time_signature_confidence"
+        FROM
+            tmp_wind
+      dataFrameCell: false
+      dataConnectionId: a6b774ac-b90c-4316-9baf-57286f62cf15
+      resultVariableName: dataframe_5
+      enableCache: false
+      runOnLoad: false
+      runOnSchedule: false
+      useRichDisplay: false
+      sqlCellOutputType: PANDAS
+      useQueryMode: false
+      castDecimals: true
+      useNativeDates: true
+      allowDuplicateColumns: false
+      tableDisplayConfig:
+        pageSize: 12
+        hideIcons: false
+        hideIndex: false
+        defaultSortColumn: null
+        defaultSortIndexColumn: null
+        defaultSortDirection: ASC
+        conditionalFormatting: null
+        filters: null
+        columnProperties:
+          - originalName: RAW_STATUS
+            renameTo: null
+            size: 400
+            wrapText: null
+            displayFormat: null
+          - originalName: VALUE
+            renameTo: null
+            size: 400
+            wrapText: null
+            displayFormat: null
+        columnOrdering: null
+  - cellType: CHARTV2
+    cellId: 8963c104-2463-4877-9406-9a55af57393f # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      height: null
+      chartSpec:
+        type: layered
+        layers:
+          - id: 6a3048dc-51a5-46a5-b0bb-a3a8f466cfb0
+            xAxis:
+              type: number
+              style:
+                grid:
+                  style: solid
+                ticks: {}
+                labels: {}
+              dataFrameColumn: start
+            series:
+              - id: 1070d901-7aae-4529-ac15-ed6869109b57
+                axis:
+                  type: number
+                  style:
+                    grid:
+                      style: solid
+                    ticks: {}
+                    labels: {}
+                  aggregate: sum
+                type: line
+                color:
+                  type: static
+                point: false
+                stroke: solid
+                opacity:
+                  type: static
+                  value: 1
+                tooltip:
+                  type: auto
+                colorOrder: []
+                dataFrameColumns:
+                  - loudness
+            dataFrame: dataframe_5
+        settings:
+          legend:
+            position: right
+          tooltip: true
+          selectionEnabled: false
+      chartSelection: {}
+      resultVariable: filter_result
+appLayout:
+  fullWidth: false
+  visibleMetadataFields:
+    - NAME
+    - DESCRIPTION
+    - AUTHOR
+    - LAST_EDITED
+    - LAST_RUN
+    - CATEGORIES
+    - STATUS
+    - TABLE_OF_CONTENTS
+  rows: []
